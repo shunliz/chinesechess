@@ -133,7 +133,7 @@ class ChessEngine():
         
 
         self.calculation_time = float(5) # �������ʱ��
-        self.max_actions = 10 # ÿ��ģ��Ծ������еĲ���
+        self.max_actions = 400 # ÿ��ģ��Ծ������еĲ���
         self.confident = 1.96 # UCB�еĳ���
         self.plays = {} # ��¼�ŷ�����ģ��Ĵ�����������(player, move)��������ң����ӣ�
         self.wins = {} # ��¼�ŷ���ʤ�Ĵ���
@@ -367,15 +367,6 @@ class ChessEngine():
             for move in movs)
 
         return move
-
-    def get_board_status(self, boardPhase, move):
-        src = move%256
-        dest = move/256
-        clone_bds = copy.deepcopy(boardPhase.board_status)
-        value = clone_bds[src]
-        clone_bds[src] = 0
-        clone_bds[dest] = value
-        return clone_bds
 
     def run_simulation(self, boardPhase, board):
         """

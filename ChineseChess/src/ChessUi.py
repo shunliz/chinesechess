@@ -443,13 +443,12 @@ board = Board()
 boardPhase = BoardPhase(board)
 boardWindow.drawBoard(board,boardPhase)
 chessEngine =  ChessEngine()
-flag =  boardPhase.isChecked(board)
-print flag
 computer_first = False
 stop = False
-train_flag = False
+train_flag = True
 while True:
     if train_flag:
+        pygame.event.pump()
         ret = boardWindow.computer_move(boardPhase, board, chessEngine)
         if not ret:
             boardPhase.reset()
