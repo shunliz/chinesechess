@@ -447,7 +447,7 @@ flag =  boardPhase.isChecked(board)
 print flag
 computer_first = False
 stop = False
-train_flag = True
+train_flag = False
 while True:
     if train_flag:
         ret = boardWindow.computer_move(boardPhase, board, chessEngine)
