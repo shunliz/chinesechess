@@ -5,6 +5,8 @@ from pygame.sprite import Sprite
 from ChessEngine import *
 import copy
 
+import logging as log
+
 
 
 class Board():
@@ -84,7 +86,7 @@ class Board():
         else:
             return None 
     def getBishopPin(self,src,dest):
-        return (src+dest)/2
+        return int((src+dest)/2)
     def getKnightPin(self,src,dest):
         return self.KnightDeltaPin.get(dest-src)+src 
     def getKnightCheckedPin(self,src,dest):
@@ -243,20 +245,20 @@ class BoardPhase():
                     for delta in (-1,1,-16):
                         chess_value = self.board_status[src+delta]
                         if chess_value == 22: #enemy Pawn
-                            print "checked by Pawn"
+                            log.info("checked by Pawn")
                             return True
                 else:  #if self is Black side
                     for delta in (-1,1,16):  #enemy Pawn
                         chess_value = self.board_status[src+delta]
                         if chess_value == 14:
-                            print "checked by Pawn"
+                            log.info("checked by Pawn")
                             return True
                 #Judge if king is checked by Knight
                 for delta in  board.KnightDeltaPin.keys():
                     dest = src + delta
                     chess_value = self.board_status[dest]
                     if (chess_value == 19 or chess_value == 11) and not self.isSelfchess(chess_value) and boardPhase.board_status[board.getKnightCheckedPin(src,dest)] == 0: #enemy knight and no pin
-                        print "checked by Knight"
+                        log.info("checked by Knight")
                         return True 
                 #Judge if king is checked by Rook or King
                 for delta in board.KingDelta:
@@ -265,7 +267,7 @@ class BoardPhase():
                         chess_value = self.board_status[dest]
                         if(chess_value != 0):
                             if(chess_value == 20 or chess_value == 12 or chess_value == 16 or chess_value == 8) and not self.isSelfchess(chess_value): #enemy Rook or king
-                                print "checked by Rook or king"
+                                log.info("checked by Rook or king")
                                 return True
                             else:
                                 break
@@ -286,7 +288,7 @@ class BoardPhase():
                         chess_value = self.board_status[dest]
                         if(chess_value != 0):
                             if(chess_value == 21 or chess_value == 13) and not self.isSelfchess(chess_value): #enemy Canon
-                                print "chessvalue %d, side %d checked by Canon" %(chess_value,self.getSide())
+                                log.info("chessvalue %d, side %d checked by Canon" %(chess_value,self.getSide()))
                                 return True
                             else:
                                 break
@@ -339,9 +341,9 @@ class BoardWindow():
     def computer_move(self, boardPhase, board, chessEngine):
         mov = chessEngine.getBestMove(boardPhase, board)
         if not mov:
-            print 'Win'
+            log.info('Win')
             return False
-        boardPhase.movePiece(board, mov % 256, mov / 256)
+        boardPhase.movePiece(board, mov % 256, int(mov / 256))
         return True
 
 
@@ -354,7 +356,7 @@ class BoardWindow():
             self.lastMov = mov
             self.lastSelect = 0
             if boardPhase.isDead(chessEngine, board):
-                print "Win!"
+                log.info("Win!")
                 return
             moved = True
         return moved

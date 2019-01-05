@@ -3,12 +3,16 @@ import time
 import copy
 from random import choice
 from math import sqrt, log
+from mcts.nodes import *
+from mcts.search import *
+
+import logging
 
 class ChessEngine():
     def __init__(self):
         self.vRed = 0
         self.vBlack = 0
-        self.type = 2  #1, for alpha beta search 2,for mcts search
+        self.type = 3  #1, for alpha beta search 2,for mcts search, 3, for enhanced mcts
         self.PawnValue = [0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,
                           0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,
                           0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,
@@ -242,7 +246,7 @@ class ChessEngine():
                  
     def move_piece(self,boardPhase,move):
         src = move%256
-        dest = move/256
+        dest = int(move/256)
         dest_chess_value = boardPhase.board_status[dest]
         if dest_chess_value != 0:
             self.__delPiece(dest, boardPhase, boardPhase.board_status[dest])
@@ -252,7 +256,7 @@ class ChessEngine():
     
     def undo_move_piece(self,boardPhase,move,dest_chess_value):
         src = move%256
-        dest = move/256
+        dest = int(move/256)
         temp = boardPhase.board_status[dest]
         self.__delPiece(dest, boardPhase, temp)
         self.__addPiece(src,boardPhase,temp)
@@ -267,7 +271,7 @@ class ChessEngine():
             return (False,0)
         boardPhase.changeSide()
         self.distance =  self.distance + 1
-        print "Move chess %d, from %d to %d" %(temp,move%256,move/256)
+        logging.info("Move chess %d, from %d to %d" %(temp,move%256,int(move/256)))
         return (True,dest_chess_value)
         
     def undoMakeMove(self,boardPhase,move,dest_chess_value):
@@ -334,9 +338,17 @@ class ChessEngine():
         move = self.select_one_move(boardPhase, board) # ѡ������ŷ�
         self.computerMove = move
 
+    def get_enhanced_mcts_move(self, boardPhase, board):
+        root = TwoPlayersGameMonteCarloTreeSearchNode(state = boardPhase, parent = None)
+        mcts = MonteCarloTreeSearch(root)
+        best_node = mcts.best_action(1000)
+        self.computerMove = best_node
+
     def getBestMove(self,boardPhase,board):
         if self.type == 1:
             self.__mainSearch(boardPhase,board)
+        elif self.type == 3:
+            self.get_enhanced_mcts_move(boardPhase, board)
         else:
             self.get_mcts_move(boardPhase, board)
         return self.computerMove
@@ -351,7 +363,7 @@ class ChessEngine():
         for move in new_list:
             clone = copy.deepcopy(boardPhase)
             src = move%256
-            dest = move/256
+            dest = int(move/256)
             value = clone.board_status[src]
             clone.board_status[src] = 0
             clone.board_status[dest] = value
@@ -388,7 +400,7 @@ class ChessEngine():
             movs = []
             movecount = self.GenerateMoves(boardPhase,board,movs)
             if movecount == 0:
-                print 'win'
+                logging.info('win')
             
             if all(plays.get((player, tuple(boardPhase.board_status), move)) for move in movs):
                 log_total = log(
@@ -410,7 +422,7 @@ class ChessEngine():
                     self.max_depth = t
 
             visited_states.add((player, tuple(boardPhase.board_status), move))
-            boardPhase.movePiece(board,move%256,move/256)
+            boardPhase.movePiece(board,move%256,move//256)
 
             if boardPhase.isDead(self, board):
                 if boardPhase.getSide() == 1:
