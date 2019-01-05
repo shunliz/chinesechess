@@ -3,6 +3,7 @@ import time
 import copy
 from random import choice
 from math import sqrt, log
+from board import Board
 from mcts.nodes import *
 from mcts.search import *
 
@@ -12,7 +13,7 @@ class ChessEngine():
     def __init__(self):
         self.vRed = 0
         self.vBlack = 0
-        self.type = 3  #1, for alpha beta search 2,for mcts search, 3, for enhanced mcts
+        self.type = 2  #1, for alpha beta search 2,for mcts search, 3, for enhanced mcts
         self.PawnValue = [0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,
                           0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,
                           0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,
@@ -169,62 +170,62 @@ class ChessEngine():
                 win.writelines(lines)
     def __MOV(self,src,dest):
         return src+dest*256
-    def GenerateMoves(self,boardPhase,board,movs):
+    def GenerateMoves(self,boardPhase,movs):
         #need check if still checked here to reduce the search space
         moveCount = 0
         for src in range(256):
             chess_value = boardPhase.board_status[src]
             if(boardPhase.isSelfchess(chess_value)):
                 if chess_value == 18 or chess_value == 10: #Bishop
-                    for delta in board.BiShopDelta:
+                    for delta in Board.BiShopDelta:
                         dest = src+delta
-                        if boardPhase.isLegalMove(chess_value,board,src,dest):
+                        if boardPhase.isLegalMove(chess_value,src,dest):
                             movs.append(self.__MOV(src,dest))
                             moveCount = moveCount + 1
                             #print "Bishop %d move: src %d, dest %d" %(chess_value,src,dest)
                 elif chess_value == 9 or chess_value == 17: #Advisor
-                    for delta in board.AdvisorDelta:
+                    for delta in Board.AdvisorDelta:
                         dest = src+delta
-                        if boardPhase.isLegalMove(chess_value,board,src,dest):
+                        if boardPhase.isLegalMove(chess_value,src,dest):
                             movs.append(self.__MOV(src,dest))
                             moveCount = moveCount + 1
                             #print "Advisor %d move: src %d, dest %d" %(chess_value,src,dest)                    
                 elif chess_value == 8 or chess_value == 16: #King
-                    for delta in board.KingDelta:
+                    for delta in Board.KingDelta:
                         dest = src+delta
-                        if boardPhase.isLegalMove(chess_value,board,src,dest):
+                        if boardPhase.isLegalMove(chess_value,src,dest):
                             movs.append(self.__MOV(src,dest))
                             moveCount = moveCount + 1  
                             #print "King %d move: src %d, dest %d" %(chess_value,src,dest)                 
                 elif chess_value == 19 or chess_value == 11: #Knight
-                    for delta in board.KnightDeltaPin.keys():
+                    for delta in Board.KnightDeltaPin.keys():
                         dest = src+delta
-                        if boardPhase.isLegalMove(chess_value,board,src,dest):
+                        if boardPhase.isLegalMove(chess_value,src,dest):
                             movs.append(self.__MOV(src,dest))
                             moveCount = moveCount + 1
                             #print "Knight %d move: src %d, dest %d" %(chess_value,src,dest)                               
                 elif chess_value == 20 or chess_value == 12: #Rook
-                    for delta in board.KingDelta:
+                    for delta in Board.KingDelta:
                         dest = src+delta
-                        while(board.inBoard[dest]==1):
-                            if boardPhase.isLegalMove(chess_value,board,src,dest):
+                        while(Board.inBoard[dest]==1):
+                            if boardPhase.isLegalMove(chess_value,src,dest):
                                 movs.append(self.__MOV(src,dest))
                                 moveCount = moveCount + 1
                                 #print "Rook %d move: src %d, dest %d" %(chess_value,src,dest)   
                             dest = dest + delta
                 elif chess_value == 21 or chess_value == 13: #Cannon
-                    for delta in board.KingDelta:
+                    for delta in Board.KingDelta:
                         dest = src+delta
-                        while(board.inBoard[dest]==1):
-                            if boardPhase.isLegalMove(chess_value,board,src,dest):
+                        while(Board.inBoard[dest]==1):
+                            if boardPhase.isLegalMove(chess_value,src,dest):
                                 movs.append(self.__MOV(src,dest))
                                 moveCount = moveCount + 1
                                 #print "Cannon %d move: src %d, dest %d" %(chess_value,src,dest)   
                             dest = dest + delta                    
                 elif chess_value == 22 or chess_value == 14: #Pawn
-                    for delta in board.KingDelta:
+                    for delta in Board.KingDelta:
                         dest = src+delta
-                        if boardPhase.isLegalMove(chess_value,board,src,dest):
+                        if boardPhase.isLegalMove(chess_value,src,dest):
                             movs.append(self.__MOV(src,dest))
                             moveCount = moveCount + 1 
                             #print "Pawn %d move: src %d, dest %d" %(chess_value,src,dest) 
@@ -263,10 +264,10 @@ class ChessEngine():
         if dest_chess_value != 0:
             self.__addPiece(dest, boardPhase, dest_chess_value)
             
-    def makeMove(self,boardPhase,board,move):
+    def makeMove(self,boardPhase,move):
         temp = boardPhase.board_status[move%256]
         dest_chess_value = self.move_piece(boardPhase, move)
-        if boardPhase.isChecked(board):
+        if boardPhase.isChecked():
             self.undo_move_piece(boardPhase, move, dest_chess_value)
             return (False,0)
         boardPhase.changeSide()
@@ -279,21 +280,21 @@ class ChessEngine():
         self.distance =  self.distance - 1
         boardPhase.changeSide()
                            
-    def __alpha_beta_search(self,depth,boardPhase,board,alpha,beta):
+    def __alpha_beta_search(self,depth,boardPhase,alpha,beta):
         best_move = 0
         best_value = alpha
         isMated =  True
         if(depth <= 0):
             return self.__evaluate(boardPhase)
         movs = []
-        movecount = self.GenerateMoves(boardPhase,board,movs)
+        movecount = self.GenerateMoves(boardPhase,movs)
         if movecount != 0:
             movs.sort(cmp=lambda x,y:cmp(self.HistoryTable[x],self.HistoryTable[y]),reverse=True)
             for move in movs:
-                result = self.makeMove(boardPhase,board,move)
+                result = self.makeMove(boardPhase,move)
                 if result[0] == True:
                     isMated = False
-                    val = -self.__alpha_beta_search(depth - 1,boardPhase,board,-beta,-alpha)
+                    val = -self.__alpha_beta_search(depth - 1,boardPhase,-beta,-alpha)
                     self.undoMakeMove(boardPhase, move, result[1])
                     if val > beta:
                         best_value = val
@@ -315,47 +316,47 @@ class ChessEngine():
             return self.vRed - self.vBlack + 3
         else:
             return self.vBlack - self.vRed + 3
-    def __mainSearch(self,boardPhase,board):
+    def __mainSearch(self,boardPhase):
         start_time = time.time()
         #for i in range(self.DEPTH_LIMIT):
         #for i in range(self.DEPTH_LIMIT):
-        value = self.__alpha_beta_search(2,boardPhase,board,-self.MATE_VALUE, self.MATE_VALUE)
+        value = self.__alpha_beta_search(2,boardPhase,-self.MATE_VALUE, self.MATE_VALUE)
         #if value > self.WIN_VALUE or value < -self.WIN_VALUE:
             #break
             #if time.time() - start_time > self.TIME_LIMIT :
             #    break
 
-    def get_mcts_move(self, boardPhase, board):
+    def get_mcts_move(self, boardPhase):
         self.plays = {}
         self.wins = {}
         simulations = 0
         begin = time.time()
         while time.time() - begin < self.calculation_time:
             clone_boardPhase = copy.deepcopy(boardPhase)
-            self.run_simulation(clone_boardPhase, board) # ����MCTS
+            self.run_simulation(clone_boardPhase) # ����MCTS
             simulations += 1
         
-        move = self.select_one_move(boardPhase, board) # ѡ������ŷ�
+        move = self.select_one_move(boardPhase) # ѡ������ŷ�
         self.computerMove = move
 
-    def get_enhanced_mcts_move(self, boardPhase, board):
+    def get_enhanced_mcts_move(self, boardPhase):
         root = TwoPlayersGameMonteCarloTreeSearchNode(state = boardPhase, parent = None)
         mcts = MonteCarloTreeSearch(root)
         best_node = mcts.best_action(1000)
         self.computerMove = best_node
 
-    def getBestMove(self,boardPhase,board):
+    def getBestMove(self,boardPhase):
         if self.type == 1:
-            self.__mainSearch(boardPhase,board)
+            self.__mainSearch(boardPhase)
         elif self.type == 3:
-            self.get_enhanced_mcts_move(boardPhase, board)
+            self.get_enhanced_mcts_move(boardPhase)
         else:
-            self.get_mcts_move(boardPhase, board)
+            self.get_mcts_move(boardPhase)
         return self.computerMove
 
-    def select_one_move(self, boardPhase, board):
+    def select_one_move(self, boardPhase):
         movs = []
-        movecount = self.GenerateMoves(boardPhase,board,movs)
+        movecount = self.GenerateMoves(boardPhase,movs)
         if movecount == 0:
             return None
         
@@ -367,7 +368,7 @@ class ChessEngine():
             value = clone.board_status[src]
             clone.board_status[src] = 0
             clone.board_status[dest] = value
-            if clone.isChecked(board):
+            if clone.isChecked():
                 movs.remove(move)
         
         if not movs:
@@ -380,7 +381,7 @@ class ChessEngine():
 
         return move
 
-    def run_simulation(self, boardPhase, board):
+    def run_simulation(self, boardPhase):
         """
         MCTS main process
         """
@@ -398,7 +399,7 @@ class ChessEngine():
             # Selection
             
             movs = []
-            movecount = self.GenerateMoves(boardPhase,board,movs)
+            movecount = self.GenerateMoves(boardPhase,movs)
             if movecount == 0:
                 logging.info('win')
             
@@ -422,9 +423,9 @@ class ChessEngine():
                     self.max_depth = t
 
             visited_states.add((player, tuple(boardPhase.board_status), move))
-            boardPhase.movePiece(board,move%256,move//256)
+            boardPhase.movePiece(move%256,move//256)
 
-            if boardPhase.isDead(self, board):
+            if boardPhase.isDead(self):
                 if boardPhase.getSide() == 1:
                     winner = 0
                 else:
