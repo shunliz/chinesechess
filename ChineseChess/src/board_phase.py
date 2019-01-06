@@ -5,9 +5,9 @@ import logging as log
 
 
 class BoardPhase(TwoPlayersGameState):
-    def __init__(self):
+    def __init__(self, init_status=Board.init_status):
         self.board_status = [] 
-        self.board_status.extend(Board.init_status)
+        self.board_status.extend(init_status)
         self.player = 0
         self.vRed = 0
         self.vBlack = 0
@@ -443,8 +443,10 @@ class BoardPhase(TwoPlayersGameState):
 
 class MCTSBoardPhase(BoardPhase):
     
-    def __init__(self):
+    def __init__(self, state=Board.init_status, next_to_move = 1):
         super(MCTSBoardPhase, self).__init__()
+        self.board_status = state
+        self.next_to_move = next_to_move
     
     def is_game_over(self):
         return self.isDead();
@@ -453,12 +455,20 @@ class MCTSBoardPhase(BoardPhase):
         return self.GenerateMoves()[1]
     
     def move(self, move):
-        return self.move_piece(move)
+        dest_value = self.move_piece(move)
+        if self.player == 0:
+            side = 1
+        else:
+            side = -1
+        return MCTSBoardPhase(self.board_status, side)
     
     @property
     def game_result(self):
         if(self.is_game_over()):
-            return 1
+            if self.player == 0:
+                return 1
+            else:
+                return -1
         
         return 0
     

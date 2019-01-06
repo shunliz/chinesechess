@@ -82,7 +82,9 @@ class TwoPlayersGameMonteCarloTreeSearchNode(MonteCarloTreeSearchNode):
 
     def rollout(self):
         current_rollout_state = self.state
-        while not current_rollout_state.is_game_over():
+        deep = 0
+        while (not current_rollout_state.is_game_over()) or (not deep <5):
+            deep = deep +1
             possible_moves = current_rollout_state.get_legal_actions()
             action = self.rollout_policy(possible_moves)
             current_rollout_state = current_rollout_state.move(action)
